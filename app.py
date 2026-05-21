@@ -22,23 +22,26 @@ if menu == "Subir Plantillas":
         for file in uploaded:
             with open(f"templates/{file.name}", "wb") as f:
                 f.write(file.getbuffer())
-            st.success(f"✅ {file.name} guardado")
+            st.success(f"✅ {file.name} guardado correctamente")
+        st.rerun()   # ← Esto fuerza la actualización
 
 elif menu == "Completar Formulario":
     st.header("✍️ Completar Control")
     
+    # Forzar actualización de la lista de archivos
     files = [f for f in os.listdir("templates") if f.endswith(".xlsx")]
     
     if not files:
-        st.warning("No hay plantillas. Sube una primero.")
+        st.warning("No hay plantillas. Ve a 'Subir Plantillas' primero.")
     else:
         if 'selected_file' not in st.session_state:
-            st.session_state.selected_file = None
+            st.session_state.selected_file = files[0] if files else None
             
         col_select, col_btn = st.columns([3,1])
         with col_select:
             selected = st.selectbox("Seleccionar archivo a completar", files, 
-                                  index=files.index(st.session_state.selected_file) if st.session_state.selected_file in files else 0)
+                                  index=files.index(st.session_state.selected_file) if st.session_state.selected_file in files else 0,
+                                  key="file_selector")
         
         with col_btn:
             if st.button("Cargar y Leer Datos del Excel", type="primary"):
@@ -49,47 +52,39 @@ elif menu == "Completar Formulario":
             filepath = f"templates/{st.session_state.selected_file}"
             st.success(f"Trabajando con: **{st.session_state.selected_file}**")
             
-            # Lectura del Excel
-            desp_2500 = desp_2000 = desp_1250 = total_despachado = 0
+            # Lectura del Excel (Columna B)
+            desp_2500 = desp_2000 = desp_1250 = total_desp = 0
             try:
                 wb = load_workbook(filepath, data_only=True)
                 ws = wb["Hoja3"] if "Hoja3" in wb.sheetnames else wb.active
-                
-                desp_2500 = ws.cell(row=5, column=2).value or 0   # Columna B
+                desp_2500 = ws.cell(row=5, column=2).value or 0
                 desp_2000 = ws.cell(row=8, column=2).value or 0
                 desp_1250 = ws.cell(row=11, column=2).value or 0
-                total_despachado = ws.cell(row=24, column=5).value or (desp_2500 + desp_2000 + desp_1250)
+                total_desp = ws.cell(row=24, column=5).value or (desp_2500 + desp_2000 + desp_1250)
             except:
-                st.warning("No se pudieron leer todos los datos del Excel.")
+                pass
 
-            # ==================== HOJA 1 - SOLO LECTURA ====================
+            # HOJA 1 - Solo Lectura
             st.subheader("1. CONTROL DE RETORNOS DE ENVASES (Solo Lectura)")
-            
             col1, col2 = st.columns(2)
             with col1:
                 st.metric("Localidad", "Rio Segundo")
                 st.metric("Equipo", "Alessandrini / Rosso / Baldoncini")
                 st.metric("Camión", "AD")
                 st.metric("Fecha", datetime.today().strftime("%d-%m-%Y"))
-            
             with col2:
                 st.metric("Cantidad 2500", desp_2500)
                 st.metric("Cantidad 2000", desp_2000)
                 st.metric("Cantidad 1250", desp_1250)
-                st.metric("**TOTAL DESPACHADO**", total_despachado)
+                st.metric("**TOTAL DESPACHADO**", total_desp)
 
             st.subheader("Otros Datos (no modificables)")
-            col_a, col_b = st.columns(2)
-            with col_a:
-                st.metric("Cantidad de Clientes", 17)
-                st.metric("Pallets", 0)
-            with col_b:
-                st.metric("Chapas", 0)
+            st.metric("Cantidad de Clientes", 17)
+            st.metric("Pallets", 0)
+            st.metric("Chapas", 0)
 
-            # ==================== HOJA 2 - EDITABLE ====================
+            # HOJA 2 - Editable
             st.subheader("2. Retornos y Cambios (Completar)")
-            
-            st.write("**Retornos**")
             r1, r2 = st.columns(2)
             with r1:
                 ret_2500 = st.number_input("Retorno 2500", value=0)
@@ -132,28 +127,15 @@ elif menu == "Completar Formulario":
                     firma_path = f"completed/firma_{timestamp}.png"
                     img.save(firma_path)
                     
-                    data = {
+                    data = {key: value for key, value in locals().items() if key in [
+                        'ret_2500','ret_2000','ret_1250','cam_2500','cam_2000','cam_1250',
+                        'cam_354','cam_220','cam_473','lleno_2500','lleno_2000','lleno_1250',
+                        'observaciones']}
+                    data.update({
                         "Fecha": datetime.today().strftime("%d-%m-%Y"),
-                        "Localidad": "Rio Segundo",
                         "Archivo": st.session_state.selected_file,
-                        "Total_Despachado": total_despachado,
-                        "Retorno_2500": ret_2500,
-                        "Retorno_2000": ret_2000,
-                        "Retorno_1250": ret_1250,
-                        "Cambio_2500": cam_2500,
-                        "Cambio_2000": cam_2000,
-                        "Cambio_1250": cam_1250,
-                        "Cambio_354": cam_354,
-                        "Cambio_220": cam_220,
-                        "Cambio_473": cam_473,
-                        "Lleno_2500": lleno_2500,
-                        "Lleno_2000": lleno_2000,
-                        "Lleno_1250": lleno_1250,
-                        "Clientes": 17,
-                        "Pallets": 0,
-                        "Chapas": 0,
-                        "Observaciones": observaciones
-                    }
+                        "Total_Despachado": total_desp
+                    })
                     pd.DataFrame([data]).to_csv(f"data/control_{timestamp}.csv", index=False)
 
                     st.success("✅ ¡Control guardado correctamente!")
