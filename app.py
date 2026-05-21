@@ -7,6 +7,7 @@ from openpyxl import load_workbook
 
 st.set_page_config(page_title="Control Retornos", layout="wide")
 
+# Crear directorios si no existen
 os.makedirs("templates", exist_ok=True)
 os.makedirs("completed", exist_ok=True)
 os.makedirs("data", exist_ok=True)
@@ -30,7 +31,7 @@ elif menu == "Completar Formulario":
     if 'selected_file' not in st.session_state and files:
         st.session_state.selected_file = files[0]
 
-    # Variables dinámicas por defecto por si falla la lectura
+    # Variables dinámicas por defecto por si falla la lectura o no hay archivo
     localidad_dinamica = "Rio Segundo"
     equipo_dinamico = "Alessandrini / Rosso / Baldoncini"
     camion_dinamico = "AD"
@@ -38,37 +39,43 @@ elif menu == "Completar Formulario":
     
     desp_2500 = desp_2000 = desp_1250 = total_desp = 0
 
-    # 2. LECTURA ANTICIPADA DEL EXCEL (Para impactar en el título)
+    # 2. LECTURA ANTICIPADA DEL EXCEL
     if files and st.session_state.get('selected_file'):
         filepath = f"templates/{st.session_state.selected_file}"
         
-        # Intentar extraer Localidad y Fecha de forma inteligente desde el nombre del archivo
-        # Ejemplo: "Control De Retorno Laguna Larga 21-05-2026.xlsx"
+        # Intentar extraer Localidad y Fecha desde el nombre del archivo de forma inteligente
         nombre_sin_ext = st.session_state.selected_file.replace(".xlsx", "")
         if "Laguna Larga" in nombre_sin_ext:
             localidad_dinamica = "Laguna Larga"
-            equipo_dinamico = "Equipo Laguna Larga" # Podés cambiarlo o leerlo de una celda
-            camion_dinamico = "LL"
         elif "Rio Segundo" in nombre_sin_ext:
             localidad_dinamica = "Rio Segundo"
-            equipo_dinamico = "Alessandrini / Rosso / Baldoncini"
-            camion_dinamico = "AD"
             
-        # Intentar extraer la fecha del nombre del archivo si existe (formato DD-MM-AAAA)
+        # Intentar extraer la fecha del nombre del archivo (formato DD-MM-AAAA)
         partes_nombre = nombre_sin_ext.split(" ")
         for parte in partes_nombre:
             if "-" in parte and len(parte) == 10:
                 fecha_dinamica = parte
 
-        # Lectura de datos numéricos desde las celdas
+        # Lectura de celdas desde el Excel
         try:
             wb = load_workbook(filepath, data_only=True)
             ws = wb["Hoja3"] if "Hoja3" in wb.sheetnames else wb.active
             
-            # NOTA: Si la localidad o el equipo están en celdas específicas del Excel, 
-            # podés descommentar las líneas de abajo y asignarles la celda correcta:
-            # localidad_dinamica = ws.cell(row=1, column=1).value or localidad_dinamica
+            # Leer el Camión desde la celda K1
+            camion_dinamico = ws["K1"].value or camion_dinamico
             
+            # Leer el Equipo desde la fila 2 (Columnas A, B, D, E, F, G)
+            columnas_equipo = ["A", "B", "D", "E", "F", "G"]
+            valores_equipo = []
+            for col in columnas_equipo:
+                celda_val = ws[f"{col}2"].value
+                if celda_val:
+                    valores_equipo.append(str(celda_val).strip())
+            
+            if valores_equipo:
+                equipo_dinamico = " / ".join(valores_equipo)
+            
+            # Leer cantidades de despacho
             desp_2500 = ws.cell(row=5, column=2).value or 0
             desp_2000 = ws.cell(row=8, column=2).value or 0
             desp_1250 = ws.cell(row=11, column=2).value or 0
@@ -76,7 +83,7 @@ elif menu == "Completar Formulario":
         except:
             pass
 
-    # 3. RENDERIZADO DEL TÍTULO DINÁMICO
+    # 3. RENDERIZADO DE TÍTULOS CON DATOS EN VIVO
     st.title(f"🧾 Control de Retornos - {localidad_dinamica}")
     st.caption(f"Equipo: {equipo_dinamico}")
     st.header("✍️ Completar Control")
@@ -98,7 +105,7 @@ elif menu == "Completar Formulario":
         if st.session_state.selected_file:
             st.success(f"Trabajando con: **{st.session_state.selected_file}**")
             
-            # HOJA 1 - Solo Lectura (YA ACTUALIZADA)
+            # HOJA 1 - Solo Lectura
             st.subheader("1. CONTROL DE RETORNOS DE ENVASES (Solo Lectura)")
             col1, col2 = st.columns(2)
             with col1:
@@ -168,6 +175,8 @@ elif menu == "Completar Formulario":
                     data.update({
                         "Fecha": fecha_dinamica,
                         "Localidad": localidad_dinamica,
+                        "Equipo": equipo_dinamico,
+                        "Camion": camion_dinamico,
                         "Archivo": st.session_state.selected_file,
                         "Total_Despachado": total_desp
                     })
@@ -185,7 +194,8 @@ else:
     if data_files:
         for f in sorted(data_files, reverse=True):
             df = pd.read_csv(f"data/{f}")
-            st.subheader(f"📅 {df['Fecha'].iloc[0]} - {df['Localidad'].iloc[0] if 'Localidad' in df.columns else ''}")
+            loc = df['Localidad'].iloc[0] if 'Localidad' in df.columns else ''
+            st.subheader(f"📅 {df['Fecha'].iloc[0]} - {loc}")
             st.dataframe(df, use_container_width=True)
     else:
         st.info("Aún no hay controles guardados.")
