@@ -5,6 +5,7 @@ import pandas as pd
 from openpyxl import load_workbook
 
 st.set_page_config(page_title="Control Retornos", layout="wide")
+st.title("🧾 Control de Retornos - Rio Segundo")
 
 os.makedirs("templates", exist_ok=True)
 os.makedirs("completed", exist_ok=True)
@@ -30,18 +31,15 @@ elif menu == "Completar Formulario":
     if not files:
         st.warning("No hay plantillas. Sube una primero.")
     else:
-        if 'selected_file' not in st.session_state:
-            st.session_state.selected_file = files[0] if files else None
+        if 'selected_file' not in st.session_state or st.session_state.selected_file not in files:
+            st.session_state.selected_file = files[0]
             
-        col_select, col_btn = st.columns([3,1])
-        with col_select:
-            selected = st.selectbox("Seleccionar archivo a completar", files, 
-                                  index=files.index(st.session_state.selected_file) if st.session_state.selected_file in files else 0)
+        selected = st.selectbox("Seleccionar archivo a completar", files, 
+                              index=files.index(st.session_state.selected_file))
         
-        with col_btn:
-            if st.button("Cargar y Leer Datos del Excel", type="primary"):
-                st.session_state.selected_file = selected
-                st.rerun()
+        if st.button("Cargar Formulario", type="primary"):
+            st.session_state.selected_file = selected
+            st.rerun()
         
         if st.session_state.selected_file:
             filepath = f"templates/{st.session_state.selected_file}"
@@ -63,8 +61,8 @@ elif menu == "Completar Formulario":
 
             st.success(f"Trabajando con: **{st.session_state.selected_file}**")
 
-            # === FORMULARIO ===
-            st.subheader("1. Datos Generales (Solo Lectura)")
+            # ==================== FORMULARIO ====================
+            st.subheader("1. Datos Generales")
             col1, col2 = st.columns(2)
             with col1:
                 st.metric("Localidad", localidad)
@@ -73,29 +71,30 @@ elif menu == "Completar Formulario":
             with col2:
                 st.metric("Fecha", datetime.today().strftime("%d-%m-%Y"))
 
-            st.subheader("2. Retornos, Cambios y Operaciones")
-            
-            col_a, col_b = st.columns(2)
-            with col_a:
+            st.subheader("2. Retornos y Cambios")
+            c1, c2 = st.columns(2)
+            with c1:
                 ret_2500 = st.number_input("Retorno 2500", value=0.0, step=0.01, format="%.2f")
                 ret_2000 = st.number_input("Retorno 2000", value=0.0, step=0.01, format="%.2f")
                 ret_1250 = st.number_input("Retorno 1250", value=0.0, step=0.01, format="%.2f")
-            with col_b:
-                cam_2500 = st.number_input("Cambio 2500", value=0.0, step=0.01, format="%.2f")
-                cam_2000 = st.number_input("Cambio 2000", value=0.0, step=0.01, format="%.2f")
-                cam_1250 = st.number_input("Cambio 1250", value=0.0, step=0.01, format="%.2f")
-
-            col_c, col_d = st.columns(2)
-            with col_c:
-                cam_354 = st.number_input("Cambio 354", value=0.0, step=0.01, format="%.2f")
-                cam_220 = st.number_input("Cambio 220", value=0.0, step=0.01, format="%.2f")
-                cam_473 = st.number_input("Cambio 473", value=0.0, step=0.01, format="%.2f")
-            with col_d:
+            with c2:
                 lleno_2500 = st.number_input("Retorno Lleno 2500", value=0.0, step=0.01, format="%.2f")
                 lleno_2000 = st.number_input("Retorno Lleno 2000", value=0.0, step=0.01, format="%.2f")
                 lleno_1250 = st.number_input("Retorno Lleno 1250", value=0.0, step=0.01, format="%.2f")
 
-            st.subheader("Otras Operaciones")
+            st.subheader("3. Cambios")
+            ch1, ch2, ch3 = st.columns(3)
+            with ch1:
+                cam_2500 = st.number_input("Cambio 2500", value=0.0, step=0.01, format="%.2f")
+                cam_2000 = st.number_input("Cambio 2000", value=0.0, step=0.01, format="%.2f")
+            with ch2:
+                cam_1250 = st.number_input("Cambio 1250", value=0.0, step=0.01, format="%.2f")
+                cam_354 = st.number_input("Cambio 354", value=0.0, step=0.01, format="%.2f")
+            with ch3:
+                cam_220 = st.number_input("Cambio 220", value=0.0, step=0.01, format="%.2f")
+                cam_473 = st.number_input("Cambio 473", value=0.0, step=0.01, format="%.2f")
+
+            st.subheader("4. Otras Operaciones")
             venta_envases = st.number_input("Venta de Envases", value=0.0, step=0.01, format="%.2f")
             prestamos = st.number_input("Préstamos", value=0.0, step=0.01, format="%.2f")
             retiros = st.number_input("Retiros", value=0.0, step=0.01, format="%.2f")
@@ -119,15 +118,15 @@ elif menu == "Completar Formulario":
                         "Retorno_2500": ret_2500,
                         "Retorno_2000": ret_2000,
                         "Retorno_1250": ret_1250,
+                        "Lleno_2500": lleno_2500,
+                        "Lleno_2000": lleno_2000,
+                        "Lleno_1250": lleno_1250,
                         "Cambio_2500": cam_2500,
                         "Cambio_2000": cam_2000,
                         "Cambio_1250": cam_1250,
                         "Cambio_354": cam_354,
                         "Cambio_220": cam_220,
                         "Cambio_473": cam_473,
-                        "Lleno_2500": lleno_2500,
-                        "Lleno_2000": lleno_2000,
-                        "Lleno_1250": lleno_1250,
                         "Venta_Envases": venta_envases,
                         "Prestamos": prestamos,
                         "Retiros": retiros,
@@ -139,15 +138,15 @@ elif menu == "Completar Formulario":
                     st.success("✅ ¡Guardado correctamente!")
                     st.balloons()
 
-else:  # Historial
+else:
     st.header("📋 Historial de Controles")
     data_files = [f for f in os.listdir("data") if f.endswith(".csv")]
     
     if data_files:
         for f in sorted(data_files, reverse=True):
             df = pd.read_csv(f"data/{f}")
-            st.subheader(f"📅 {df['Fecha'].iloc[0]} {df['Hora'].iloc[0]} - {df['Archivo'].iloc[0]}")
+            st.subheader(f"📅 {df['Fecha'].iloc[0]} {df.get('Hora', [''])[0]} - {df['Archivo'].iloc[0]}")
             st.dataframe(df, use_container_width=True)
             st.divider()
     else:
-        st.info("Aún no hay controles guardados. Completá uno primero.")
+        st.info("Aún no hay controles guardados.")
