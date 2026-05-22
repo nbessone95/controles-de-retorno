@@ -118,16 +118,18 @@ elif menu == "Completar Formulario":
             observaciones = st.text_area("Observaciones", height=100)
 
             st.subheader("✍️ Firma Digital")
-            from streamlit_drawable_canvas import st_canvas
-            canvas = st_canvas(height=280, width=700, stroke_width=4, stroke_color="#000000", 
-                             background_color="#ffffff", key="canvas")
+            firma_nombre = st.text_input("Nombre y Apellido de quien firma", value="")
+            st.checkbox("✅ Confirmo que la información es correcta", value=False)
 
             if st.button("💾 Guardar Control Completo", type="primary"):
-                if canvas.image_data is not None:
-                    img = Image.fromarray(canvas.image_data.astype("uint8"))
+                if firma_nombre.strip() == "":
+                    st.error("Por favor escriba su nombre como firma")
+                else:
                     timestamp = datetime.now().strftime("%Y%m%d_%H%M")
-                    firma_path = f"completed/firma_{timestamp}.png"
-                    img.save(firma_path)
+                    # Simulamos firma guardando el nombre
+                    firma_path = f"completed/firma_{timestamp}.txt"
+                    with open(firma_path, "w") as f:
+                        f.write(f"Firma: {firma_nombre}\nFecha: {datetime.now()}")
                     
                     data = {
                         "Fecha": datetime.today().strftime("%d-%m-%Y"),
@@ -148,43 +150,22 @@ elif menu == "Completar Formulario":
                         "Lleno_2000": lleno_2000,
                         "Lleno_1250": lleno_1250,
                         "Observaciones": observaciones,
-                        "Firma": firma_path
+                        "Firma": firma_nombre
                     }
                     pd.DataFrame([data]).to_csv(f"data/control_{timestamp}.csv", index=False)
 
-                    st.success("✅ Guardado correctamente!")
-                    st.image(firma_path, caption="Firma guardada")
+                    st.success("✅ ¡Control guardado correctamente!")
+                    st.info(f"Firma registrada: **{firma_nombre}**")
                     st.balloons()
-                else:
-                    st.error("Por favor realizá tu firma digital")
-
-else:  # Historial Seguro
+else:
     st.header("📋 Historial de Controles")
     data_files = [f for f in os.listdir("data") if f.endswith(".csv")]
-    
     if data_files:
         for f in sorted(data_files, reverse=True):
-            try:
-                df = pd.read_csv(f"data/{f}")
-                st.subheader(f"📅 {df['Fecha'].iloc[0]} - {df['Archivo'].iloc[0]}")
-                
-                loc = df['Localidad'].iloc[0] if 'Localidad' in df.columns else "Rio Segundo"
-                eq = df['Equipo'].iloc[0] if 'Equipo' in df.columns else "N/A"
-                st.caption(f"Localidad: {loc} | Equipo: {eq}")
-                
-                # Mostrar tabla sin columnas sensibles
-                cols_to_drop = ["Fecha", "Archivo", "Localidad", "Equipo", "Firma"]
-                display_df = df.drop(columns=[col for col in cols_to_drop if col in df.columns], errors='ignore')
-                st.dataframe(display_df, use_container_width=True)
-                
-                # Mostrar firma si existe
-                if "Firma" in df.columns:
-                    firma_path = df["Firma"].iloc[0]
-                    if os.path.exists(firma_path):
-                        st.image(firma_path, caption="Firma del control", width=500)
-                
-                st.divider()
-            except Exception as e:
-                st.warning(f"Error al leer {f}")
+            df = pd.read_csv(f"data/{f}")
+            st.subheader(f"📅 {df['Fecha'].iloc[0]} - {df['Archivo'].iloc[0]}")
+            st.caption(f"Localidad: {df.get('Localidad', ['N/A'])[0]} | Equipo: {df.get('Equipo', ['N/A'])[0]}")
+            st.dataframe(df, use_container_width=True)
+            st.divider()
     else:
         st.info("Aún no hay controles guardados.")
