@@ -87,7 +87,7 @@ elif menu == "Completar Formulario":
             st.metric("Pallets", 0)
             st.metric("Chapas", 0)
 
-            # Hoja 2
+            # Hoja 2 - Con decimales
             st.subheader("2. Retornos y Cambios")
             r1, r2 = st.columns(2)
             with r1:
@@ -96,6 +96,7 @@ elif menu == "Completar Formulario":
             with r2:
                 ret_1250 = st.number_input("Retorno 1250", value=0.0, step=0.01)
 
+            st.write("**Cambios**")
             c1, c2, c3 = st.columns(3)
             with c1:
                 cam_2500 = st.number_input("Cambio 2500", value=0.0, step=0.01)
@@ -107,12 +108,18 @@ elif menu == "Completar Formulario":
                 cam_220 = st.number_input("Cambio 220", value=0.0, step=0.01)
                 cam_473 = st.number_input("Cambio 473", value=0.0, step=0.01)
 
+            st.write("**Retorno Lleno**")
             rl1, rl2 = st.columns(2)
             with rl1:
                 lleno_2500 = st.number_input("Retorno Lleno 2500", value=0.0, step=0.01)
                 lleno_2000 = st.number_input("Retorno Lleno 2000", value=0.0, step=0.01)
             with rl2:
                 lleno_1250 = st.number_input("Retorno Lleno 1250", value=0.0, step=0.01)
+
+            # Nuevas columnas
+            venta_envases = st.number_input("Venta de Envases", value=0.0, step=0.01)
+            prestamos = st.number_input("Préstamos", value=0.0, step=0.01)
+            retiros = st.number_input("Retiros", value=0.0, step=0.01)
 
             observaciones = st.text_area("Observaciones", height=100)
 
@@ -143,6 +150,9 @@ elif menu == "Completar Formulario":
                         "Lleno_2500": lleno_2500,
                         "Lleno_2000": lleno_2000,
                         "Lleno_1250": lleno_1250,
+                        "Venta_Envases": venta_envases,
+                        "Prestamos": prestamos,
+                        "Retiros": retiros,
                         "Observaciones": observaciones,
                         "Firma": firma_nombre
                     }
@@ -152,7 +162,7 @@ elif menu == "Completar Formulario":
                     st.info(f"Firma: **{firma_nombre}** - {datetime.now().strftime('%d-%m-%Y %H:%M')}")
                     st.balloons()
 
-else:  # Historial Seguro
+else:  # Historial Corregido
     st.header("📋 Historial de Controles")
     data_files = [f for f in os.listdir("data") if f.endswith(".csv")]
     
@@ -171,7 +181,7 @@ else:  # Historial Seguro
                 
                 st.dataframe(df, use_container_width=True)
                 st.divider()
-            except Exception as e:
+            except:
                 st.warning(f"Error al leer {f}")
     else:
         st.info("Aún no hay controles guardados.")
