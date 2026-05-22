@@ -53,11 +53,11 @@ elif menu == "Completar Formulario":
             try:
                 wb = load_workbook(filepath, data_only=True)
                 ws3 = wb["Hoja3"] if "Hoja3" in wb.sheetnames else wb.active
-                localidad = ws3.cell(row=2, column=2).value or localidad
+                localidad = str(ws3.cell(row=2, column=2).value or localidad)
                 
                 if "Hoja2" in wb.sheetnames:
                     ws2 = wb["Hoja2"]
-                    equipo = ws2.cell(row=2, column=2).value or equipo
+                    equipo = str(ws2.cell(row=2, column=2).value or equipo)
                 
                 desp_2500 = float(ws3.cell(row=5, column=2).value or 0)
                 desp_2000 = float(ws3.cell(row=8, column=2).value or 0)
@@ -149,10 +149,10 @@ elif menu == "Completar Formulario":
                     pd.DataFrame([data]).to_csv(f"data/control_{timestamp}.csv", index=False)
 
                     st.success("✅ ¡Control guardado correctamente!")
-                    st.info(f"Firma: **{firma_nombre}** | {datetime.now().strftime('%d-%m-%Y %H:%M')}")
+                    st.info(f"Firma: **{firma_nombre}** - {datetime.now().strftime('%d-%m-%Y %H:%M')}")
                     st.balloons()
 
-else:  # Historial Corregido
+else:  # Historial Seguro
     st.header("📋 Historial de Controles")
     data_files = [f for f in os.listdir("data") if f.endswith(".csv")]
     
@@ -160,15 +160,18 @@ else:  # Historial Corregido
         for f in sorted(data_files, reverse=True):
             try:
                 df = pd.read_csv(f"data/{f}")
-                st.subheader(f"📅 {df['Fecha'].iloc[0]} {df.get('Hora', [''])[0]} - {df['Archivo'].iloc[0]}")
+                fecha = df['Fecha'].iloc[0] if 'Fecha' in df.columns else "Sin fecha"
+                hora = df['Hora'].iloc[0] if 'Hora' in df.columns else ""
+                
+                st.subheader(f"📅 {fecha} {hora} - {df['Archivo'].iloc[0]}")
                 
                 loc = df['Localidad'].iloc[0] if 'Localidad' in df.columns else "Rio Segundo"
                 eq = df['Equipo'].iloc[0] if 'Equipo' in df.columns else "N/A"
-                st.caption(f"Localidad: {loc} | Equipo: {eq} | Firma: {df['Firma'].iloc[0]}")
+                st.caption(f"Localidad: {loc} | Equipo: {eq}")
                 
                 st.dataframe(df, use_container_width=True)
                 st.divider()
-            except:
+            except Exception as e:
                 st.warning(f"Error al leer {f}")
     else:
         st.info("Aún no hay controles guardados.")
