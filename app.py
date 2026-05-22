@@ -7,6 +7,7 @@ from openpyxl import load_workbook
 
 st.set_page_config(page_title="Control Retornos", layout="wide")
 st.title("🧾 Control de Retornos - Rio Segundo")
+st.caption("Equipo: Alessandrini / Rosso / Baldoncini")
 
 os.makedirs("templates", exist_ok=True)
 os.makedirs("completed", exist_ok=True)
@@ -50,17 +51,17 @@ elif menu == "Completar Formulario":
             st.success(f"Trabajando con: **{st.session_state.selected_file}**")
             
             # Lectura del Excel
-            equipo = "Alessandrini / Rosso / Baldoncini"  # Valor por defecto
+            equipo = "Alessandrini / Rosso / Baldoncini"
             desp_2500 = desp_2000 = desp_1250 = total_desp = 0
             try:
                 wb = load_workbook(filepath, data_only=True)
                 
-                # Leer equipo desde Hoja2
+                # Leer equipo desde Hoja 2
                 if "Hoja2" in wb.sheetnames:
                     ws2 = wb["Hoja2"]
                     equipo = ws2.cell(row=2, column=2).value or equipo
                 
-                # Leer despachos desde Hoja3 (Columna B)
+                # Leer despachos desde Hoja 3 (Columna B)
                 ws3 = wb["Hoja3"] if "Hoja3" in wb.sheetnames else wb.active
                 desp_2500 = ws3.cell(row=5, column=2).value or 0
                 desp_2000 = ws3.cell(row=8, column=2).value or 0
@@ -109,35 +110,4 @@ elif menu == "Completar Formulario":
                 cam_1250 = st.number_input("Cambio 1250", value=0)
                 cam_354 = st.number_input("Cambio 354", value=0)
             with c3:
-                cam_220 = st.number_input("Cambio 220", value=0)
-                cam_473 = st.number_input("Cambio 473", value=0)
-
-            st.write("**Retorno Lleno**")
-            rl1, rl2 = st.columns(2)
-            with rl1:
-                lleno_2500 = st.number_input("Retorno Lleno 2500", value=0)
-                lleno_2000 = st.number_input("Retorno Lleno 2000", value=0)
-            with rl2:
-                lleno_1250 = st.number_input("Retorno Lleno 1250", value=0)
-
-            observaciones = st.text_area("Observaciones", height=100)
-
-            # Firma
-            st.subheader("✍️ Firma Digital")
-            from streamlit_drawable_canvas import st_canvas
-            canvas = st_canvas(height=280, width=700, stroke_width=4, stroke_color="#000000", 
-                             background_color="#ffffff", key="canvas")
-
-            if st.button("💾 Guardar Control Completo", type="primary"):
-                if canvas.image_data is not None:
-                    img = Image.fromarray(canvas.image_data.astype("uint8"))
-                    timestamp = datetime.now().strftime("%Y%m%d_%H%M")
-                    firma_path = f"completed/firma_{timestamp}.png"
-                    img.save(firma_path)
-                    
-                    data = {
-                        "Fecha": datetime.today().strftime("%d-%m-%Y"),
-                        "Equipo": equipo,
-                        "Archivo": st.session_state.selected_file,
-                        "Total_Despachado": total_desp,
-                        "Retorno_2500": ret_250
+                cam_220
