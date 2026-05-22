@@ -46,21 +46,25 @@ elif menu == "Completar Formulario":
         
         if st.session_state.selected_file:
             filepath = f"templates/{st.session_state.selected_file}"
-            
-            # Título dinámico según el archivo
             st.title(f"🧾 {st.session_state.selected_file.replace('.xlsx', '')}")
             
-            # Lectura del Excel
+            # Lectura del Excel con celdas exactas
+            localidad = "Rio Segundo"
             equipo = "Alessandrini / Rosso / Baldoncini"
             desp_2500 = desp_2000 = desp_1250 = total_desp = 0
             try:
                 wb = load_workbook(filepath, data_only=True)
                 
+                # Localidad en Hoja 3 (o activa) - Celda B2
+                ws3 = wb["Hoja3"] if "Hoja3" in wb.sheetnames else wb.active
+                localidad = ws3.cell(row=2, column=2).value or localidad
+                
+                # Equipo en Hoja 2 - Celda B2
                 if "Hoja2" in wb.sheetnames:
                     ws2 = wb["Hoja2"]
                     equipo = ws2.cell(row=2, column=2).value or equipo
                 
-                ws3 = wb["Hoja3"] if "Hoja3" in wb.sheetnames else wb.active
+                # Despachos (Columna B)
                 desp_2500 = ws3.cell(row=5, column=2).value or 0
                 desp_2000 = ws3.cell(row=8, column=2).value or 0
                 desp_1250 = ws3.cell(row=11, column=2).value or 0
@@ -71,10 +75,10 @@ elif menu == "Completar Formulario":
             st.success(f"Trabajando con: **{st.session_state.selected_file}**")
 
             # ==================== HOJA 1 ====================
-            st.subheader("1. CONTROL DE RETORNOS DE ENVASES (Solo Lectura)")
+            st.subheader("1. CONTROL DE RETORNOS DE ENVASES")
             col1, col2 = st.columns(2)
             with col1:
-                st.metric("Localidad", "Rio Segundo")
+                st.metric("Localidad", localidad)
                 st.metric("Equipo", equipo)
                 st.metric("Camión", "AD")
                 st.metric("Fecha", datetime.today().strftime("%d-%m-%Y"))
@@ -137,6 +141,7 @@ elif menu == "Completar Formulario":
                     
                     data = {
                         "Fecha": datetime.today().strftime("%d-%m-%Y"),
+                        "Localidad": localidad,
                         "Equipo": equipo,
                         "Archivo": st.session_state.selected_file,
                         "Total_Despachado": total_desp,
@@ -152,7 +157,8 @@ elif menu == "Completar Formulario":
                         "Lleno_2500": lleno_2500,
                         "Lleno_2000": lleno_2000,
                         "Lleno_1250": lleno_1250,
-                        "Observaciones": observaciones
+                        "Observaciones": observaciones,
+                        "Firma": firma_path
                     }
                     pd.DataFrame([data]).to_csv(f"data/control_{timestamp}.csv", index=False)
 
@@ -168,9 +174,16 @@ else:  # Historial
     if data_files:
         for f in sorted(data_files, reverse=True):
             df = pd.read_csv(f"data/{f}")
-            st.subheader(f"📅 {df['Fecha'].iloc[0]}")
-            st.caption(f"Archivo: {df['Archivo'].iloc[0]}")
-            st.dataframe(df, use_container_width=True)
+            st.subheader(f"📅 {df['Fecha'].iloc[0]} - {df['Archivo'].iloc[0]}")
+            st.caption(f"Localidad: {df['Localidad'].iloc[0]} | Equipo: {df['Equipo'].iloc[0]}")
+            
+            st.dataframe(df.drop(columns=["Fecha", "Archivo", "Localidad", "Equipo", "Firma"], errors='ignore'), use_container_width=True)
+            
+            if "Firma" in df.columns:
+                firma_path = df["Firma"].iloc[0]
+                if os.path.exists(firma_path):
+                    st.image(firma_path, caption="Firma del control", width=500)
+            
             st.divider()
     else:
         st.info("Aún no hay controles guardados.")
