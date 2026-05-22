@@ -2,7 +2,6 @@ import streamlit as st
 from datetime import datetime
 import os
 import pandas as pd
-from PIL import Image
 from openpyxl import load_workbook
 
 st.set_page_config(page_title="Control Retornos", layout="wide")
@@ -69,7 +68,7 @@ elif menu == "Completar Formulario":
 
             st.success(f"Trabajando con: **{st.session_state.selected_file}**")
 
-            # Hoja 1 - Solo Lectura
+            # Hoja 1
             st.subheader("1. CONTROL DE RETORNOS DE ENVASES")
             col1, col2 = st.columns(2)
             with col1:
@@ -88,7 +87,7 @@ elif menu == "Completar Formulario":
             st.metric("Pallets", 0)
             st.metric("Chapas", 0)
 
-            # Hoja 2 - Con decimales
+            # Hoja 2
             st.subheader("2. Retornos y Cambios")
             r1, r2 = st.columns(2)
             with r1:
@@ -97,7 +96,6 @@ elif menu == "Completar Formulario":
             with r2:
                 ret_1250 = st.number_input("Retorno 1250", value=0.0, step=0.01)
 
-            st.write("**Cambios**")
             c1, c2, c3 = st.columns(3)
             with c1:
                 cam_2500 = st.number_input("Cambio 2500", value=0.0, step=0.01)
@@ -109,7 +107,6 @@ elif menu == "Completar Formulario":
                 cam_220 = st.number_input("Cambio 220", value=0.0, step=0.01)
                 cam_473 = st.number_input("Cambio 473", value=0.0, step=0.01)
 
-            st.write("**Retorno Lleno**")
             rl1, rl2 = st.columns(2)
             with rl1:
                 lleno_2500 = st.number_input("Retorno Lleno 2500", value=0.0, step=0.01)
@@ -127,12 +124,9 @@ elif menu == "Completar Formulario":
                     st.error("Por favor escriba su nombre como firma")
                 else:
                     timestamp = datetime.now().strftime("%Y%m%d_%H%M")
-                    firma_path = f"completed/firma_{timestamp}.txt"
-                    with open(firma_path, "w") as f:
-                        f.write(f"Firma: {firma_nombre}\nFecha: {datetime.now()}")
-                    
                     data = {
                         "Fecha": datetime.today().strftime("%d-%m-%Y"),
+                        "Hora": datetime.today().strftime("%H:%M"),
                         "Localidad": localidad,
                         "Equipo": equipo,
                         "Archivo": st.session_state.selected_file,
@@ -155,10 +149,10 @@ elif menu == "Completar Formulario":
                     pd.DataFrame([data]).to_csv(f"data/control_{timestamp}.csv", index=False)
 
                     st.success("✅ ¡Control guardado correctamente!")
-                    st.info(f"Firma: **{firma_nombre}**")
+                    st.info(f"Firma: **{firma_nombre}** | {datetime.now().strftime('%d-%m-%Y %H:%M')}")
                     st.balloons()
 
-else:  # Historial Seguro
+else:  # Historial Corregido
     st.header("📋 Historial de Controles")
     data_files = [f for f in os.listdir("data") if f.endswith(".csv")]
     
@@ -166,15 +160,15 @@ else:  # Historial Seguro
         for f in sorted(data_files, reverse=True):
             try:
                 df = pd.read_csv(f"data/{f}")
-                st.subheader(f"📅 {df['Fecha'].iloc[0]} - {df['Archivo'].iloc[0]}")
+                st.subheader(f"📅 {df['Fecha'].iloc[0]} {df.get('Hora', [''])[0]} - {df['Archivo'].iloc[0]}")
                 
                 loc = df['Localidad'].iloc[0] if 'Localidad' in df.columns else "Rio Segundo"
                 eq = df['Equipo'].iloc[0] if 'Equipo' in df.columns else "N/A"
-                st.caption(f"Localidad: {loc} | Equipo: {eq}")
+                st.caption(f"Localidad: {loc} | Equipo: {eq} | Firma: {df['Firma'].iloc[0]}")
                 
                 st.dataframe(df, use_container_width=True)
                 st.divider()
             except:
-                st.warning(f"Error al mostrar {f}")
+                st.warning(f"Error al leer {f}")
     else:
         st.info("Aún no hay controles guardados.")
