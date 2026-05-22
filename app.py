@@ -41,7 +41,7 @@ elif menu == "Completar Formulario":
             filepath = f"templates/{st.session_state.selected_file}"
             st.title(f"🧾 {st.session_state.selected_file.replace('.xlsx', '')}")
             
-            # Lectura básica
+            # Lectura
             localidad = "Rio Segundo"
             equipo = "Alessandrini / Rosso / Baldoncini"
             try:
@@ -56,16 +56,33 @@ elif menu == "Completar Formulario":
 
             st.success(f"Trabajando con: **{st.session_state.selected_file}**")
 
-            # ==================== CAMPOS ====================
-            st.subheader("Retornos")
+            # ==================== SECCIONES ====================
+            st.subheader("1. Datos Generales")
             col1, col2 = st.columns(2)
             with col1:
+                st.metric("Localidad", localidad)
+                st.metric("Equipo", equipo)
+            with col2:
+                st.metric("Camión", "AD")
+                st.metric("Fecha", datetime.today().strftime("%d-%m-%Y"))
+
+            st.subheader("2. Retornos")
+            c1, c2 = st.columns(2)
+            with c1:
                 ret_2500 = st.number_input("Retorno 2500", value=0.0, step=0.01, format="%.2f")
                 ret_2000 = st.number_input("Retorno 2000", value=0.0, step=0.01, format="%.2f")
-            with col2:
+            with c2:
                 ret_1250 = st.number_input("Retorno 1250", value=0.0, step=0.01, format="%.2f")
 
-            st.subheader("Cambios")
+            st.subheader("3. Retornos Llenos")
+            rl1, rl2 = st.columns(2)
+            with rl1:
+                lleno_2500 = st.number_input("Retorno Lleno 2500", value=0.0, step=0.01, format="%.2f")
+                lleno_2000 = st.number_input("Retorno Lleno 2000", value=0.0, step=0.01, format="%.2f")
+            with rl2:
+                lleno_1250 = st.number_input("Retorno Lleno 1250", value=0.0, step=0.01, format="%.2f")
+
+            st.subheader("4. Cambios")
             c1, c2, c3 = st.columns(3)
             with c1:
                 cam_2500 = st.number_input("Cambio 2500", value=0.0, step=0.01, format="%.2f")
@@ -77,15 +94,7 @@ elif menu == "Completar Formulario":
                 cam_220 = st.number_input("Cambio 220", value=0.0, step=0.01, format="%.2f")
                 cam_473 = st.number_input("Cambio 473", value=0.0, step=0.01, format="%.2f")
 
-            st.subheader("Retornos Llenos")
-            rl1, rl2 = st.columns(2)
-            with rl1:
-                lleno_2500 = st.number_input("Retorno Lleno 2500", value=0.0, step=0.01, format="%.2f")
-                lleno_2000 = st.number_input("Retorno Lleno 2000", value=0.0, step=0.01, format="%.2f")
-            with rl2:
-                lleno_1250 = st.number_input("Retorno Lleno 1250", value=0.0, step=0.01, format="%.2f")
-
-            st.subheader("Otras Operaciones")
+            st.subheader("5. Otras Operaciones")
             venta_envases = st.number_input("Venta de Envases", value=0.0, step=0.01, format="%.2f")
             prestamos = st.number_input("Préstamos", value=0.0, step=0.01, format="%.2f")
             retiros = st.number_input("Retiros", value=0.0, step=0.01, format="%.2f")
