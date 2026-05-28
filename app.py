@@ -40,7 +40,7 @@ elif menu == "Completar Formulario":
             filepath = f"templates/{st.session_state.selected_file}"
             st.title(f"🧾 {st.session_state.selected_file.replace('.xlsx', '')}")
             
-            # ==================== LECTURA AUTOMÁTICA DEL EXCEL ====================
+            # ==================== LECTURA DEL EXCEL ====================
             localidad = "Rio Segundo"
             equipo = "Alessandrini / Rosso / Baldoncini"
             clientes = 17
@@ -57,17 +57,19 @@ elif menu == "Completar Formulario":
                     ws2 = wb["Hoja2"]
                     equipo = str(ws2.cell(row=2, column=2).value or equipo)
                 
-                # Cantidad de Clientes (Hoja3 - alrededor de fila 32)
-                clientes = int(ws3.cell(row=32, column=3).value or 17)
+                # Cantidad de Clientes (Hoja3 - fila 32, columna D)
+                clientes_cell = ws3.cell(row=32, column=4).value
+                if clientes_cell is not None:
+                    clientes = int(clientes_cell)
                 
-                # Total Despachado (Hoja3 fila 24 columna E o F)
+                # Total Despachado (fila 24)
                 total_desp = float(ws3.cell(row=24, column=5).value or 0)
-            except:
-                st.warning("No se pudieron leer todos los datos del Excel")
+            except Exception as e:
+                st.warning(f"Error al leer algunos datos: {e}")
 
             st.success(f"Trabajando con: **{st.session_state.selected_file}**")
 
-            # ==================== DATOS LEÍDOS ====================
+            # ==================== DATOS DEL EXCEL ====================
             st.subheader("1. Datos Generales (del Excel)")
             col1, col2 = st.columns(2)
             with col1:
@@ -79,7 +81,7 @@ elif menu == "Completar Formulario":
                 st.metric("Cantidad de Clientes", clientes)
                 st.metric("Total Despachado", total_desp)
 
-            # ==================== CAMPOS EDITABLES ====================
+            # ==================== CAMPOS A COMPLETAR ====================
             st.subheader("2. Retornos y Operaciones")
             c1, c2 = st.columns(2)
             with c1:
@@ -88,7 +90,14 @@ elif menu == "Completar Formulario":
             with c2:
                 ret_1250 = st.number_input("Retorno 1250", value=0.0, step=0.01, format="%.2f")
 
-            # ... (agrega aquí los demás campos que necesites)
+            st.subheader("Otras Operaciones")
+            col_a, col_b, col_c = st.columns(3)
+            with col_a:
+                venta_envases = st.number_input("Venta de Envases", value=0.0, step=0.01, format="%.2f")
+            with col_b:
+                prestamos = st.number_input("Préstamos", value=0.0, step=0.01, format="%.2f")
+            with col_c:
+                retiros = st.number_input("Retiros", value=0.0, step=0.01, format="%.2f")
 
             observaciones = st.text_area("Observaciones", height=80)
 
@@ -109,15 +118,22 @@ elif menu == "Completar Formulario":
                         "Hora": datetime.today().strftime("%H:%M"),
                         "Localidad": localidad,
                         "Equipo": equipo,
-                        "Clientes": clientes,
-                        "Total_Despachado": total_desp,
+                        "Camion": "AD",
                         "Archivo": st.session_state.selected_file,
+                        "Total_Despachado": total_desp,
+                        "Clientes": clientes,
+                        "Retorno_2500": ret_2500,
+                        "Retorno_2000": ret_2000,
+                        "Retorno_1250": ret_1250,
+                        "Venta_Envases": venta_envases,
+                        "Prestamos": prestamos,
+                        "Retiros": retiros,
                         "Observaciones": observaciones,
                         "Firma_Repartidor": firma_rep,
                         "Firma_Controlador": firma_ctrl
                     }
                     pd.DataFrame([data]).to_csv(f"data/control_{timestamp}.csv", index=False)
-                    st.success("✅ Guardado correctamente!")
+                    st.success("✅ ¡Guardado correctamente!")
                     st.balloons()
 
 else:
